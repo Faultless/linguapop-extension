@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# LinguaPop
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Smart language learning resource recommendations — radio, podcasts, YouTube and more, matched to your level and interests.
 
-Currently, two official plugins are available:
+Available as a **browser extension** (Chrome/Firefox), **web app**, and **mobile app** (Android via Capacitor).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Live radio** — Stream stations in your target language
+- **Podcasts** — Browse episodes with a built-in audio player and adjustable playback speed
+- **YouTube** — Curated channels for language learners
+- **Custom feeds** — Paste any YouTube channel, podcast RSS, or website URL and it gets parsed alongside curated content
+- **Smart matching** — Set your level (beginner/intermediate/advanced) and interests; resources are ranked by relevance
+- **10 languages** — French, Spanish, German, Italian, Portuguese, Japanese, Korean, Chinese, Arabic, Russian
+- **No account required** — Preferences stored locally on-device
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Monorepo Structure
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+packages/
+  core/        Shared logic: types, data, hooks, utils, audio context
+  ui/          Shared React components and views
+  extension/   Browser extension target (Chrome/Firefox, MV3)
+  web/         Responsive web app target
+  mobile/      Capacitor mobile app target (iOS/Android)
+  landing/     Static landing page (deployed to GitHub Pages)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Getting Started
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+pnpm install
 ```
+
+### Development
+
+```sh
+pnpm dev:extension    # Browser extension (localhost:5173)
+pnpm dev:web          # Web app
+pnpm dev:landing      # Landing page
+```
+
+### Building
+
+```sh
+pnpm build:extension  # → packages/extension/dist/
+pnpm build:web        # → packages/web/dist/
+pnpm build:landing    # → packages/landing/dist/
+pnpm build            # Build all packages
+```
+
+### Loading the Extension
+
+1. Run `pnpm build:extension`
+2. **Chrome**: `chrome://extensions` → Developer Mode → Load unpacked → select `packages/extension/dist/`
+3. **Firefox**: `about:debugging` → This Firefox → Load Temporary Add-on → select `packages/extension/dist/manifest.json`
+
+### Mobile (Capacitor)
+
+```sh
+cd packages/mobile
+npx cap add ios        # First time only
+npx cap add android    # First time only
+pnpm build && npx cap sync
+npx cap open ios       # Open in Xcode
+npx cap open android   # Open in Android Studio
+```
+
+## Tech Stack
+
+- React 19, TypeScript 6, Vite 8
+- Tailwind CSS 4
+- Capacitor 7 (mobile)
+- pnpm workspaces
+
+## Landing Page
+
+Hosted on GitHub Pages and auto-deployed via GitHub Actions on push to `main`.

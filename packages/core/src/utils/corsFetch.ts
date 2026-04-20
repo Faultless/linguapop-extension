@@ -5,6 +5,13 @@
  * - Web/Mobile production: uses VITE_CORS_PROXY_URL if configured, else direct fetch
  */
 export function corsFetch(url: string): Promise<Response> {
+  // @ts-ignore
+  const isNative = !!(window.Capacitor?.isNativePlatform?.());
+
+  if (isNative) {
+    return fetch(url)
+  }
+
   if (import.meta.env.DEV) {
     return fetch(`/cors-proxy?url=${encodeURIComponent(url)}`)
   }

@@ -8,6 +8,8 @@
     "build:extension": "pnpm --filter @linguapop/extension build",
     "build:web": "pnpm --filter @linguapop/web build",
     "build:mobile": "pnpm --filter @linguapop/mobile build",
+    "build:android": "pnpm --filter @linguapop/mobile build:android",
+    "open:android": "pnpm --filter @linguapop/mobile cap:open:android",
     "build:landing": "pnpm --filter @linguapop/landing build",
     "dev:landing": "pnpm --filter @linguapop/landing dev",
     "build": "pnpm -r build",
