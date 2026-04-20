@@ -7,12 +7,14 @@ export const RESOURCES: Resource[] = [
     description: 'Daily news read slowly and clearly. Perfect for building listening comprehension with real-world content.',
     type: 'podcast', language: 'fr', levels: ['beginner', 'intermediate'],
     interests: ['news', 'culture'], url: 'https://www.rfi.fr/fr/podcasts/journal-en-francais-facile', free: true,
+    feedUrl: 'https://podcasts.rfi.fr/podcast/rfi-francais-facile.xml',
   },
   {
     id: 'inner-french', name: 'InnerFrench',
     description: 'Hugo Cotton speaks at natural speed about fascinating topics. Ideal for breaking the intermediate plateau.',
     type: 'podcast', language: 'fr', levels: ['intermediate'],
     interests: ['culture', 'stories', 'science'], url: 'https://innerfrench.com', free: true,
+    feedUrl: 'https://feeds.transistor.fm/innerfrench',
   },
   {
     id: 'francais-authentique', name: 'Français Authentique',
@@ -25,6 +27,7 @@ export const RESOURCES: Resource[] = [
     description: 'France\'s top public radio — news, culture, debates, and comedy. Full native speed.',
     type: 'radio', language: 'fr', levels: ['advanced'],
     interests: ['news', 'culture', 'entertainment'], url: 'https://www.radiofrance.fr/franceinter/direct', free: true,
+    streamUrl: 'https://icecast.radiofrance.fr/franceinter-midfi.mp3',
   },
   {
     id: 'tv5monde', name: 'TV5Monde',
@@ -51,12 +54,14 @@ export const RESOURCES: Resource[] = [
     description: 'NPR\'s Spanish-language narrative journalism podcast. Real stories from Latin America, told beautifully.',
     type: 'podcast', language: 'es', levels: ['intermediate', 'advanced'],
     interests: ['culture', 'stories', 'news'], url: 'https://radioambulante.org', free: true,
+    feedUrl: 'https://feeds.npr.org/510311/podcast.xml',
   },
   {
     id: 'notes-in-spanish', name: 'Notes in Spanish',
     description: 'Ben and Marina\'s bilingual conversations — from beginners chatting slowly to native-speed discussions.',
     type: 'podcast', language: 'es', levels: ['beginner', 'intermediate'],
     interests: ['culture', 'entertainment'], url: 'https://www.notesinspanish.com', free: true,
+    feedUrl: 'https://feeds.feedburner.com/NotesinSpanishIntermediate',
   },
   {
     id: 'cnn-espanol', name: 'CNN en Español',
@@ -77,6 +82,7 @@ export const RESOURCES: Resource[] = [
     description: 'Annik Rubens reads fascinating texts about German culture and daily life at a learner-friendly pace.',
     type: 'podcast', language: 'de', levels: ['beginner', 'intermediate'],
     interests: ['culture', 'stories'], url: 'https://slowgerman.com', free: true,
+    feedUrl: 'https://slowgerman.com/feed/podcast',
   },
   {
     id: 'easy-german', name: 'Easy German',
@@ -95,6 +101,7 @@ export const RESOURCES: Resource[] = [
     description: 'Germany\'s flagship public radio. In-depth news, culture, and science at full native speed.',
     type: 'radio', language: 'de', levels: ['advanced'],
     interests: ['news', 'culture', 'science'], url: 'https://www.deutschlandfunk.de/live-stream', free: true,
+    streamUrl: 'https://st01.sslstream.dlf.de/dlf/01/128/mp3/stream.mp3',
   },
 
   // ── ITALIAN ───────────────────────────────────────────────────────────────
@@ -115,6 +122,7 @@ export const RESOURCES: Resource[] = [
     description: 'Italy\'s main public radio station — national news, culture, sport, and entertainment.',
     type: 'radio', language: 'it', levels: ['advanced'],
     interests: ['news', 'culture', 'entertainment'], url: 'https://www.raiplaysound.it/radio1', free: true,
+    streamUrl: 'https://icestreaming.rai.it/1.mp3',
   },
   {
     id: 'one-world-italiano', name: 'One World Italiano',
@@ -161,6 +169,7 @@ export const RESOURCES: Resource[] = [
     description: 'Teppei talks about everyday topics in natural Japanese — no English, no slow speech. Highly addictive.',
     type: 'podcast', language: 'ja', levels: ['intermediate', 'advanced'],
     interests: ['culture', 'entertainment'], url: 'https://nihongoconteppei.com', free: true,
+    feedUrl: 'https://nihongoconteppei.com/feed/podcast',
   },
   {
     id: 'nhk-world-radio', name: 'NHK World Radio Japan',

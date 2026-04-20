@@ -1,7 +1,9 @@
 import { RESOURCES } from '../data/resources'
 import { ResourceCard } from '../components/ResourceCard'
 
-export function Saved({ saved, onSave }: { saved: Set<string>; onSave: (id: string) => void }) {
+import type { Resource } from '../data/types'
+
+export function Saved({ saved, onSave, onOpenPodcast }: { saved: Set<string>; onSave: (id: string) => void; onOpenPodcast: (r: Resource) => void }) {
   const items = RESOURCES.filter(r => saved.has(r.id))
 
   return (
@@ -15,7 +17,7 @@ export function Saved({ saved, onSave }: { saved: Set<string>; onSave: (id: stri
           </div>
         ) : (
           items.map(r => (
-            <ResourceCard key={r.id} resource={r} saved onSave={() => onSave(r.id)} />
+            <ResourceCard key={r.id} resource={r} saved onSave={() => onSave(r.id)} onOpenPodcast={onOpenPodcast} />
           ))
         )}
       </div>

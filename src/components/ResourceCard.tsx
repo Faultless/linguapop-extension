@@ -1,3 +1,4 @@
+import { useAudio } from '../context/AudioContext'
 import { LANG_MAP } from '../data/languages'
 import type { Resource } from '../data/types'
 
@@ -17,15 +18,34 @@ export function ResourceCard({
   resource,
   saved,
   onSave,
+  onOpenPodcast,
 }: {
   resource: Resource
   saved: boolean
   onSave: () => void
+  onOpenPodcast?: (r: Resource) => void
 }) {
+  const { play, togglePlay, stop, resource: nowResource, isPlaying } = useAudio()
   const lang = LANG_MAP[resource.language]
 
+  const isNowPlaying = nowResource?.id === resource.id
+
+  const handlePlayRadio = () => {
+    if (!resource.streamUrl) return
+    if (isNowPlaying) { togglePlay(); return }
+    play(resource, { url: resource.streamUrl, title: 'Live Stream' })
+  }
+
+  const handlePlayPodcast = () => {
+    if (isNowPlaying) { stop(); return }
+    onOpenPodcast?.(resource)
+  }
+
+  const canPlayRadio = resource.type === 'radio' && !!resource.streamUrl
+  const canPlayPodcast = resource.type === 'podcast' && !!resource.feedUrl
+
   return (
-    <div className="bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col gap-3">
+    <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all p-4 flex flex-col gap-3 ${isNowPlaying ? 'border-amber-300 ring-1 ring-amber-200' : 'border-stone-100'}`}>
       {/* Top row */}
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
@@ -55,10 +75,9 @@ export function ResourceCard({
         </button>
       </div>
 
-      {/* Description */}
       <p className="text-xs text-stone-500 leading-relaxed">{resource.description}</p>
 
-      {/* Level badges + open */}
+      {/* Level badges + actions */}
       <div className="flex items-center gap-2">
         <div className="flex gap-1 flex-wrap flex-1">
           {resource.levels.map(lv => (
@@ -67,14 +86,32 @@ export function ResourceCard({
             </span>
           ))}
         </div>
-        <a
-          href={resource.url}
-          target="_blank"
-          rel="noreferrer"
-          className="shrink-0 text-xs font-semibold px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-white rounded-lg transition-colors"
-        >
-          Open →
-        </a>
+        <div className="flex gap-1.5 shrink-0">
+          {canPlayRadio && (
+            <button
+              onClick={handlePlayRadio}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${isNowPlaying ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-amber-500 hover:bg-amber-400 text-white'}`}
+            >
+              {isNowPlaying && isPlaying ? '⏸ Live' : '▶ Live'}
+            </button>
+          )}
+          {canPlayPodcast && (
+            <button
+              onClick={handlePlayPodcast}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${isNowPlaying ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-amber-500 hover:bg-amber-400 text-white'}`}
+            >
+              {isNowPlaying ? '⏹ Stop' : '🎙 Episodes'}
+            </button>
+          )}
+          <a
+            href={resource.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-semibold px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-lg transition-colors"
+          >
+            Open →
+          </a>
+        </div>
       </div>
     </div>
   )

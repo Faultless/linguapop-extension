@@ -1,10 +1,14 @@
 import { useState } from 'react'
+import { AudioProvider } from './context/AudioContext'
 import { usePrefs } from './hooks/usePrefs'
 import { useSaved } from './hooks/useSaved'
 import { Onboarding } from './views/Onboarding'
 import { Discover } from './views/Discover'
 import { Saved } from './views/Saved'
 import { Settings } from './views/Settings'
+import { NowPlaying } from './components/NowPlaying'
+import { PodcastDrawer } from './components/PodcastDrawer'
+import type { Resource } from './data/types'
 
 type Tab = 'discover' | 'saved' | 'settings'
 
@@ -14,15 +18,16 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'settings', label: 'Settings', icon: '⚙' },
 ]
 
-export default function App() {
+function Inner() {
   const { prefs, update, reset } = usePrefs()
   const { saved, toggle } = useSaved()
   const [tab, setTab] = useState<Tab>('discover')
+  const [podcastDrawer, setPodcastDrawer] = useState<Resource | null>(null)
 
   if (!prefs) return <Onboarding onDone={update} />
 
   return (
-    <div className="flex flex-col bg-stone-50" style={{ width: 420, height: 580 }}>
+    <div className="flex flex-col bg-stone-50 relative overflow-hidden" style={{ width: 420, height: 580 }}>
       {/* Header */}
       <div className="flex items-center px-4 pt-4 pb-2 bg-amber-50 border-b border-amber-100 shrink-0">
         <span className="text-lg font-bold text-amber-700 tracking-tight">🌍 LinguaPop</span>
@@ -32,11 +37,19 @@ export default function App() {
       </div>
 
       {/* View */}
-      <div className="flex-1 overflow-hidden">
-        {tab === 'discover' && <Discover prefs={prefs} saved={saved} onSave={toggle} />}
-        {tab === 'saved'    && <Saved saved={saved} onSave={toggle} />}
+      <div className="flex-1 overflow-hidden relative">
+        {tab === 'discover' && <Discover prefs={prefs} saved={saved} onSave={toggle} onOpenPodcast={setPodcastDrawer} />}
+        {tab === 'saved'    && <Saved saved={saved} onSave={toggle} onOpenPodcast={setPodcastDrawer} />}
         {tab === 'settings' && <Settings prefs={prefs} onUpdate={update} onReset={reset} />}
+
+        {/* Podcast episode drawer — slides over content */}
+        {podcastDrawer && (
+          <PodcastDrawer resource={podcastDrawer} onClose={() => setPodcastDrawer(null)} />
+        )}
       </div>
+
+      {/* Now playing bar — sits above bottom nav */}
+      <NowPlaying />
 
       {/* Bottom nav */}
       <div className="flex border-t border-stone-200 bg-white shrink-0">
@@ -56,5 +69,13 @@ export default function App() {
         ))}
       </div>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <AudioProvider>
+      <Inner />
+    </AudioProvider>
   )
 }

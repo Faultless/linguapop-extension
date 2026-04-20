@@ -18,7 +18,7 @@
     "default_title": "LinguaPop"
   },
   "permissions": [],
-  "host_permissions": [],
+  "host_permissions": ["*://*/*"],
   "browser_specific_settings": {
     "gecko": {
       "id": "linguapop@faultless",

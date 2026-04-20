@@ -16,10 +16,12 @@ export function Discover({
   prefs,
   saved,
   onSave,
+  onOpenPodcast,
 }: {
   prefs: UserPrefs
   saved: Set<string>
   onSave: (id: string) => void
+  onOpenPodcast: (r: import('../data/types').Resource) => void
 }) {
   const [activeLang, setActiveLang] = useState<string>('all')
   const [activeType, setActiveType] = useState<ResourceType | 'all'>('all')
@@ -111,6 +113,7 @@ export function Discover({
               resource={r}
               saved={saved.has(r.id)}
               onSave={() => onSave(r.id)}
+              onOpenPodcast={onOpenPodcast}
             />
           ))
         )}
