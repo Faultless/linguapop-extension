@@ -1,0 +1,33 @@
+{
+  "name": "@linguapop/mobile",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "cap:sync": "cap sync",
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android",
+    "build:ios": "pnpm build && cap sync ios",
+    "build:android": "pnpm build && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.2.0",
+    "@linguapop/core": "workspace:*",
+    "@linguapop/ui": "workspace:*",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.2.0",
+    "@capacitor/ios": "^7.2.0",
+    "@capacitor/android": "^7.2.0",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.0.9"
+  }
+}
