@@ -34,7 +34,7 @@ function Inner() {
 
       {/* View */}
       <div className="flex-1 overflow-hidden relative">
-        {tab === 'discover' && <Discover prefs={prefs} saved={saved} onSave={toggle} onOpenPodcast={setPodcastDrawer} customFeeds={customFeeds} onAddFeed={() => setAddFeedOpen(true)} onRemoveFeed={removeFeed} onOpenCustomFeed={setCustomFeedDrawer} />}
+        {tab === 'discover' && <Discover prefs={prefs} saved={saved} onSave={toggle} onOpenPodcast={setPodcastDrawer} customFeeds={customFeeds} onAddFeed={() => setAddFeedOpen(true)} onRemoveFeed={removeFeed} onOpenCustomFeed={setCustomFeedDrawer} onAddDirectFeed={addFeed} />}
         {tab === 'saved'    && <Saved saved={saved} onSave={toggle} onOpenPodcast={setPodcastDrawer} />}
         {tab === 'settings' && <Settings prefs={prefs} onUpdate={update} onReset={reset} customFeeds={customFeeds} onRemoveFeed={removeFeed} />}
 

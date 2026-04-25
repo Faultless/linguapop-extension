@@ -1,7 +1,7 @@
 // Data
 export { LANGUAGES, LANG_MAP } from './data/languages'
 export { RESOURCES } from './data/resources'
-export type { Level, ResourceType, Interest, Language, Resource, Episode, UserPrefs, CustomFeed } from './data/types'
+export type { Level, ResourceType, Interest, Language, Resource, Episode, UserPrefs, CustomFeed, FeedSearchResult } from './data/types'
 
 // Hooks
 export { usePrefs } from './hooks/usePrefs'
@@ -14,3 +14,4 @@ export { AudioProvider, useAudio } from './context/AudioContext'
 // Utils
 export { corsFetch } from './utils/corsFetch'
 export { resolveAndParseFeed, parseFeedEpisodes } from './utils/feedParser'
+export { searchFeeds } from './utils/feedSearch'

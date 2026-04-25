@@ -23,7 +23,7 @@ function Inner() {
   if (!prefs) return <Onboarding onDone={update} />
 
   return (
-    <div className="flex flex-col bg-stone-50 relative overflow-hidden w-full h-dvh max-w-lg mx-auto">
+    <div className="flex flex-col bg-stone-50 relative overflow-hidden w-full h-full max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center px-4 pt-4 pb-2 bg-amber-50 border-b border-amber-100 shrink-0">
         <span className="text-lg font-bold text-amber-700 tracking-tight">🌍 LinguaPop</span>
@@ -34,7 +34,7 @@ function Inner() {
 
       {/* View */}
       <div className="flex-1 overflow-hidden relative">
-        {tab === 'discover' && <Discover prefs={prefs} saved={saved} onSave={toggle} onOpenPodcast={setPodcastDrawer} customFeeds={customFeeds} onAddFeed={() => setAddFeedOpen(true)} onRemoveFeed={removeFeed} onOpenCustomFeed={setCustomFeedDrawer} />}
+        {tab === 'discover' && <Discover prefs={prefs} saved={saved} onSave={toggle} onOpenPodcast={setPodcastDrawer} customFeeds={customFeeds} onAddFeed={() => setAddFeedOpen(true)} onRemoveFeed={removeFeed} onOpenCustomFeed={setCustomFeedDrawer} onAddDirectFeed={addFeed} />}
         {tab === 'saved'    && <Saved saved={saved} onSave={toggle} onOpenPodcast={setPodcastDrawer} />}
         {tab === 'settings' && <Settings prefs={prefs} onUpdate={update} onReset={reset} customFeeds={customFeeds} onRemoveFeed={removeFeed} />}
 

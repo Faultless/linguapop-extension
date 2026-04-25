@@ -4,12 +4,12 @@
  * - Dev mode (any target): routes through Vite's /cors-proxy middleware
  * - Web/Mobile production: uses VITE_CORS_PROXY_URL if configured, else direct fetch
  */
-export function corsFetch(url: string): Promise<Response> {
+export function corsFetch(url: string, options?: RequestInit): Promise<Response> {
   // @ts-ignore
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
 
   if (isNative) {
-    return fetch(url)
+    return fetch(url, options)
   }
 
   if (import.meta.env.DEV) {
@@ -21,5 +21,5 @@ export function corsFetch(url: string): Promise<Response> {
     return fetch(`${proxyUrl}?url=${encodeURIComponent(url)}`)
   }
 
-  return fetch(url)
+  return fetch(url, options)
 }

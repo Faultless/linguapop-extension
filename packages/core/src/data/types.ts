@@ -39,11 +39,21 @@ export interface UserPrefs {
 export interface CustomFeed {
   id: string
   url: string           // original URL the user pasted
-  feedUrl: string       // resolved RSS/Atom feed URL
+  feedUrl: string       // resolved RSS/Atom feed URL (stream URL for radio)
   title: string
   description: string
   language: string      // language code, user-assigned or auto-detected
-  type: 'podcast' | 'youtube'
+  type: 'podcast' | 'youtube' | 'radio'
   imageUrl?: string
   addedAt: number       // timestamp
+}
+
+export interface FeedSearchResult {
+  title: string
+  description: string
+  type: 'podcast' | 'radio'
+  feedUrl: string       // RSS feed URL for podcasts, stream URL for radio
+  url: string           // canonical webpage
+  imageUrl?: string
+  language?: string     // 2-letter ISO code if available
 }

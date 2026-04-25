@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useAudio } from '@linguapop/core'
-import { parseFeedEpisodes } from '@linguapop/core'
+import { useAudio, parseFeedEpisodes } from '@linguapop/core'
 import type { CustomFeed, Episode } from '@linguapop/core'
 
 const PAGE_SIZE = 30
@@ -13,12 +12,15 @@ function fmtDate(raw: string) {
 type SortDir = 'desc' | 'asc'
 
 export function CustomFeedDrawer({ feed, onClose }: { feed: CustomFeed; onClose: () => void }) {
-  const { play, track: nowTrack } = useAudio()
+  const { play, togglePlay, isPlaying, track: nowTrack } = useAudio()
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  const isRadio = feed.type === 'radio'
+  const isYouTube = feed.type === 'youtube'
 
   const pseudoResource = {
     id: feed.id,
@@ -34,11 +36,12 @@ export function CustomFeedDrawer({ feed, onClose }: { feed: CustomFeed; onClose:
   }
 
   useEffect(() => {
+    if (isRadio) { setLoading(false); return }
     setLoading(true); setError('')
-    parseFeedEpisodes(feed.feedUrl, feed.type)
+    parseFeedEpisodes(feed.feedUrl, feed.type as 'podcast' | 'youtube')
       .then(eps => { setEpisodes(eps); setLoading(false) })
       .catch(() => { setError('Could not load episodes.'); setLoading(false) })
-  }, [feed.feedUrl, feed.type])
+  }, [feed.feedUrl, feed.type, isRadio])
 
   const sorted = useMemo(() => {
     const s = [...episodes]
@@ -48,7 +51,7 @@ export function CustomFeedDrawer({ feed, onClose }: { feed: CustomFeed; onClose:
 
   const visible = sorted.slice(0, visibleCount)
   const hasMore = visibleCount < sorted.length
-  const isYouTube = feed.type === 'youtube'
+  const streamIsPlaying = isPlaying && nowTrack?.url === feed.feedUrl
 
   return (
     <div className="absolute inset-0 bg-stone-50 z-10 flex flex-col" style={{ top: 0 }}>
@@ -56,7 +59,9 @@ export function CustomFeedDrawer({ feed, onClose }: { feed: CustomFeed; onClose:
         <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-lg leading-none">←</button>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-stone-800 truncate">{feed.title}</div>
-          <div className="text-[10px] text-stone-400">{episodes.length ? `${episodes.length} episodes` : feed.type}</div>
+          <div className="text-[10px] text-stone-400">
+            {isRadio ? 'Radio stream' : episodes.length ? `${episodes.length} episodes` : feed.type}
+          </div>
         </div>
         {episodes.length > 0 && (
           <button
@@ -82,7 +87,35 @@ export function CustomFeedDrawer({ feed, onClose }: { feed: CustomFeed; onClose:
             <p className="text-sm text-stone-500">{error}</p>
           </div>
         )}
-        {!loading && !error && visible.map((ep, i) => {
+        {isRadio && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 gap-5">
+            <div className="text-5xl">📻</div>
+            {feed.description && (
+              <p className="text-xs text-stone-400 text-center px-8 leading-relaxed">{feed.description}</p>
+            )}
+            <button
+              onClick={() =>
+                streamIsPlaying
+                  ? togglePlay()
+                  : play(pseudoResource, { url: feed.feedUrl, title: feed.title })
+              }
+              className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-white font-semibold text-sm rounded-xl transition-colors"
+            >
+              {streamIsPlaying ? '⏸ Pause' : '▶ Play Stream'}
+            </button>
+            {feed.url && feed.url !== feed.feedUrl && (
+              <a
+                href={feed.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
+              >
+                Station website →
+              </a>
+            )}
+          </div>
+        )}
+        {!isRadio && !loading && !error && visible.map((ep, i) => {
           const isNow = nowTrack?.url === ep.url
           return isYouTube ? (
             <a
@@ -119,7 +152,7 @@ export function CustomFeedDrawer({ feed, onClose }: { feed: CustomFeed; onClose:
             </button>
           )
         })}
-        {!loading && !error && hasMore && (
+        {!isRadio && !loading && !error && hasMore && (
           <button
             onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
             className="w-full py-3 text-xs font-semibold text-amber-600 hover:bg-amber-50 transition-colors border-b border-stone-100"

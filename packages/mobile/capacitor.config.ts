@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'com.linguapop.app',
+  appId: 'com.faultless.linguapop',
   appName: 'LinguaPop',
   webDir: 'dist',
   server: {

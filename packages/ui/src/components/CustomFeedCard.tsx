@@ -18,8 +18,8 @@ export function CustomFeedCard({
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${feed.type === 'youtube' ? 'bg-red-100 text-red-700' : 'bg-violet-100 text-violet-700'}`}>
-              {feed.type === 'youtube' ? '▶ youtube' : '🎙 podcast'}
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${feed.type === 'youtube' ? 'bg-red-100 text-red-700' : feed.type === 'radio' ? 'bg-sky-100 text-sky-700' : 'bg-violet-100 text-violet-700'}`}>
+              {feed.type === 'youtube' ? '▶ youtube' : feed.type === 'radio' ? '📻 radio' : '🎙 podcast'}
             </span>
             {lang && (
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${lang.color}`}>
@@ -51,7 +51,7 @@ export function CustomFeedCard({
           onClick={onOpen}
           className="text-xs font-semibold px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-white rounded-lg transition-colors"
         >
-          {feed.type === 'youtube' ? '▶ Videos' : '🎙 Episodes'}
+          {feed.type === 'youtube' ? '▶ Videos' : feed.type === 'radio' ? '📻 Listen' : '🎙 Episodes'}
         </button>
         <a
           href={feed.url}
