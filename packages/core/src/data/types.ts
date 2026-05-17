@@ -1,59 +1,86 @@
-export type Level = 'beginner' | 'intermediate' | 'advanced'
-export type ResourceType = 'radio' | 'podcast' | 'youtube' | 'website' | 'newsletter'
-export type Interest = 'news' | 'culture' | 'music' | 'stories' | 'science' | 'business' | 'kids' | 'entertainment'
-
 export interface Language {
   code: string
   name: string
   flag: string
-  color: string // tailwind bg class for accent
+  /** Tailwind bg/text class for the language chip. */
+  color: string
 }
 
-export interface Resource {
+// ───────── Reader / Novels ─────────
+
+export type TranslationStatus = 'none' | 'pending' | 'translated' | 'failed'
+
+export interface Chapter {
+  id: string
+  title: string
+  originalText: string
+  translatedText?: string
+  translationStatus: TranslationStatus
+}
+
+export interface NovelMeta {
+  id: string
+  title: string
+  author?: string
+  coverUrl?: string
+  sourceLanguage: string   // language code, e.g. 'ja'
+  targetLanguage: string   // user's native language, e.g. 'en'
+  chapterCount: number
+  addedAt: number
+  lastReadChapter: number  // index
+  lastReadOffset: number   // scrollTop or page index
+  /**
+   * Was the translated text provided by the user (e.g. dual import / JSON / paste)?
+   * If true, we never overwrite chapters via MT.
+   */
+  hasUserTranslation: boolean
+}
+
+/**
+ * Stored separately from NovelMeta so the library list stays small.
+ * Chapters can be megabytes.
+ */
+export interface NovelBody {
+  id: string               // same as NovelMeta.id
+  chapters: Chapter[]
+}
+
+export type ReaderLayout = 'scroll' | 'paged'
+export type ReaderViewMode = 'original' | 'translated' | 'parallel'
+export type ReaderFontFamily = 'serif' | 'sans' | 'mono' | 'dyslexic'
+
+export interface ReaderTheme {
   id: string
   name: string
-  description: string
-  type: ResourceType
-  language: string
-  levels: Level[]
-  interests: Interest[]
-  url: string
-  free: boolean
-  streamUrl?: string  // direct audio stream for radio
-  feedUrl?: string    // RSS/Atom feed URL for podcasts
+  bg: string        // CSS color
+  fg: string        // CSS color
+  accent: string    // CSS color (used for toggles, highlights)
+  muted: string     // CSS color (secondary text)
+  /** True for dark themes — flips a few UI affordances. */
+  dark: boolean
+  /** If true, the theme is user-defined and editable. */
+  custom?: boolean
 }
 
-export interface Episode {
-  title: string
-  url: string
-  pubDate: string
-  duration?: string
-  description?: string
-}
-
-export interface UserPrefs {
-  languages: { code: string; level: Level }[]
-  interests: Interest[]
-}
-
-export interface CustomFeed {
-  id: string
-  url: string           // original URL the user pasted
-  feedUrl: string       // resolved RSS/Atom feed URL (stream URL for radio)
-  title: string
-  description: string
-  language: string      // language code, user-assigned or auto-detected
-  type: 'podcast' | 'youtube' | 'radio'
-  imageUrl?: string
-  addedAt: number       // timestamp
-}
-
-export interface FeedSearchResult {
-  title: string
-  description: string
-  type: 'podcast' | 'radio'
-  feedUrl: string       // RSS feed URL for podcasts, stream URL for radio
-  url: string           // canonical webpage
-  imageUrl?: string
-  language?: string     // 2-letter ISO code if available
+export interface ReaderPrefs {
+  fontFamily: ReaderFontFamily
+  fontSize: number          // px
+  lineHeight: number        // unitless
+  letterSpacing: number     // em
+  paragraphSpacing: number  // em
+  maxWidth: number          // px column max-width
+  themeId: string
+  customThemes: ReaderTheme[]
+  layout: ReaderLayout
+  viewMode: ReaderViewMode
+  /** If true, single-tap translates selected paragraphs in-place. */
+  tapToTranslate: boolean
+  /** Show furigana / rubies where present. */
+  showRubies: boolean
+  /** If true, MT requests are cached per chapter automatically. */
+  autoCacheTranslations: boolean
+  /** Preferred TTS rate. */
+  ttsRate: number
+  /** If true, Japanese source text is tokenized and colored by JLPT level. */
+  coloriseJapanese: boolean
 }

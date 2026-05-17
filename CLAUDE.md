@@ -4,20 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-LinguaPop is a language-learning resource aggregator available as a browser extension, web app, and mobile app. It surfaces curated and user-added podcasts, YouTube channels, radio streams, and more across 10 languages. There is no backend — all state is stored in localStorage/device storage.
+LinguaPop is a language-learning novel reader. Users import EPUB/TXT files (or a paired original+translation), and read them with switchable view modes (original / translated / parallel), per-token JLPT color coding for Japanese, tap-for-dictionary, select-for-translation, custom themes, multiple layouts, TTS, and fullscreen. Available as a browser extension, web app, and mobile (Capacitor) app. There is no backend — all state is stored in localStorage / IndexedDB.
 
 ## Monorepo Structure
 
 pnpm workspace with six packages under `packages/`:
 
-- **`@linguapop/core`** — shared business logic: data fetching (`corsFetch`), feed parsing (RSS/Atom/YouTube), hooks (`usePrefs`, `useSaved`, `useCustomFeeds`), types, and the curated resources dataset
-- **`@linguapop/ui`** — shared React components and views (tabs, cards, drawers, audio player)
-- **`@linguapop/extension`** — Chrome/Firefox MV3 popup (420×580px fixed viewport)
-- **`@linguapop/web`** — responsive web app, same React `<App>` as the extension
-- **`@linguapop/mobile`** — Capacitor 7 wrapper (iOS/Android) around the same web app
-- **`@linguapop/landing`** — static HTML/Tailwind marketing page (no React), deployed to GitHub Pages at `/linguapop-extension/`
+- **`@linguapop/core`** — shared business logic: types, hooks (`useNovels`, `useReaderPrefs`), reader-prefs context, importers (EPUB/TXT), content cleaner, machine translation, kuromoji wrapper, JLPT vocab, Jisho dictionary lookup, IDB key-value store.
+- **`@linguapop/ui`** — shared React components and views: `ReadTab` (entire app), `Library` (home), `Reader` (the reading view), `ImportNovelPanel`, `ReaderSettingsPanel`, `JapaneseText` (colored tokens), `JlptWordPopover`.
+- **`@linguapop/extension`** — Chrome/Firefox MV3 popup (420×580px fixed viewport).
+- **`@linguapop/web`** — responsive web app (`max-w-lg`).
+- **`@linguapop/mobile`** — Capacitor 7 wrapper (iOS/Android) around the same web app.
+- **`@linguapop/landing`** — static HTML/Tailwind marketing page (no React), deployed to GitHub Pages at `/linguapop-extension/`.
 
-All three app targets (extension, web, mobile) render the identical `<App>` component from `@linguapop/ui`. Platform differences are limited to viewport CSS and CORS handling.
+All three app targets (extension, web, mobile) render `<ReaderPrefsProvider><ReadTab/></ReaderPrefsProvider>` — there is no tab navigation, the reader is the entire app.
 
 ## Common Commands
 
@@ -50,38 +50,37 @@ There are no test commands — there is currently no test suite.
 
 ## Key Architecture Decisions
 
-### CORS Strategy
-
-`corsFetch` (in `packages/core/src/utils/corsFetch.ts`) detects the runtime environment and routes requests accordingly:
-- **Extension:** direct `fetch` — MV3 `host_permissions: ["*://*/*"]` grants CORS-free access
-- **Mobile:** Capacitor's `CapacitorHttp` plugin (native HTTP, bypasses CORS)
-- **Dev server:** proxied through Vite middleware at `/cors-proxy` (configured in each package's `vite.config.ts`)
-- **Production web:** uses `VITE_CORS_PROXY_URL` env var or falls back to direct fetch
-
 ### State Management
 
-No global state library. Three custom React hooks backed by localStorage:
-- `usePrefs` — UI preferences (language filter, level, interests)
-- `useSaved` — saved/bookmarked resources
-- `useCustomFeeds` — user-added feed URLs
+No global state library. Single source of truth for reader prefs lives in `ReaderPrefsProvider` (Context). Novels are held by `useNovels`: lightweight `NovelMeta[]` index in localStorage, full `NovelBody` (chapters) per novel in IndexedDB.
 
-### Audio Playback
+### Theming
 
-A single `AudioContext` (React Context wrapping `HTMLAudioElement`) is provided at app root and consumed everywhere. Only one track plays at a time across all views.
+`ReaderPrefs.themeId` selects from `BUILTIN_THEMES` (plus user-defined `customThemes`). The active theme is applied app-wide via inline styles reading `theme.bg / fg / accent / muted`. There is no CSS variable scaffolding — components consume the theme through the context.
 
-### Feed Parsing
+### Translation
 
-`packages/core/src/utils/` contains parsers for RSS, Atom, and YouTube. YouTube channel resolution handles `@handles`, channel IDs, and playlist URLs via HTML scraping with a fallback chain: direct feed → `<link>` tag detection → scrape.
+`translateText(text, src, tgt, opts?)` is the unified MT call: tries Capacitor native (iOS Translation / ML Kit on Android) if a plugin is registered, then Google Translate's public `gtx` endpoint, then LibreTranslate. Long chapters are split on paragraph/sentence boundaries. Translation is **explicit only** — never auto-fires; user presses the in-reader Translate button or selects text.
 
-### Curated Data
+### Japanese
 
-70+ resources defined in `packages/core/src/data/resources.ts`. Each resource has: `type` (radio | podcast | youtube | website | newsletter), `language`, `level` (beginner | intermediate | advanced), `interests[]`, and feed/URL metadata.
+`kuromoji.js` is loaded as a UMD `<script>` from jsDelivr the first time a Japanese chapter is opened (its IPADIC dict, ~10 MB, is fetched from the same CDN and browser-cached). Tokens are colored by JLPT level using a curated starter vocab list bundled in core. Tap a token → Jisho dictionary lookup (cached in IDB). Drag-select a span → `translateText` of the selection.
+
+### Importers
+
+`parseEpub` handles EPUB 2/3 via JSZip; `splitTxtIntoChapters` heuristically splits .txt files. `pruneNovel()` strips frontmatter/backmatter (copyright pages, TOC, dedications, "About the author"). `alignChapters()` pairs original + translation chapter-by-chapter (by index, falling back to title-similarity Jaccard).
+
+### CORS
+
+`corsFetch` (in `packages/core/src/utils/corsFetch.ts`) routes through:
+- **Extension:** direct `fetch` (MV3 `host_permissions: ["*://*/*"]`).
+- **Mobile:** direct `fetch` (Capacitor WebView).
+- **Dev server:** Vite middleware at `/cors-proxy` (configured in each package's `vite.config.ts`).
+- **Production web:** `VITE_CORS_PROXY_URL` env var or direct fetch fallback.
 
 ## Tech Stack
 
-All packages share: React 19, TypeScript 6 (strict), Vite 8, Tailwind CSS 4 (via `@tailwindcss/vite`), ESLint 9 (flat config).
-
-TypeScript is configured with `noUnusedLocals` and `noUnusedParameters` — keep imports and parameters clean.
+All packages share: React 19, TypeScript 6 (strict), Vite 8, Tailwind CSS 4 (via `@tailwindcss/vite`), ESLint 9 (flat config). TypeScript has `noUnusedLocals` and `noUnusedParameters` — keep imports and parameters clean.
 
 ## Deployment
 

@@ -7,6 +7,7 @@
   "types": "src/index.ts",
   "dependencies": {
     "@linguapop/core": "workspace:*",
-    "react": "^19.2.5"
+    "react": "^19.2.5",
+    "tailwindcss": "^4.2.2"
   }
 }
