@@ -1,11 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../providers/novels_provider.dart';
+import '../../services/sample/sample_content.dart';
+import 'mini_toast.dart';
 
 /// Shown on Flutter web where live source browsing is unavailable:
 /// the adapters need `dart:io` networking (cookie-driven redirect flows)
 /// and cross-origin fetches to news sites are blocked by browser CORS
-/// anyway. Web users still get the full reader via file import.
-class WebSourceNotice extends StatelessWidget {
+/// anyway. Web users still get the full reader via file import, plus a
+/// one-tap way to load bundled sample content so there's something to
+/// read immediately.
+class WebSourceNotice extends ConsumerStatefulWidget {
   const WebSourceNotice({super.key});
+
+  @override
+  ConsumerState<WebSourceNotice> createState() => _WebSourceNoticeState();
+}
+
+class _WebSourceNoticeState extends ConsumerState<WebSourceNotice> {
+  bool _loading = false;
+
+  Future<void> _loadSample() async {
+    setState(() => _loading = true);
+    try {
+      await SampleContentService(ref.read(novelsProvider.notifier)).loadAll();
+      if (mounted) {
+        MiniToast.show(context, 'Sample content added ✓');
+        context.go('/');
+      }
+    } catch (_) {
+      if (mounted) MiniToast.show(context, 'Could not load sample content');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +69,18 @@ class WebSourceNotice extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _loading ? null : _loadSample,
+                icon: _loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_stories_outlined, size: 18),
+                label: const Text('Load a sample story + article'),
               ),
             ],
           ),

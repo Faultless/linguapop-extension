@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,9 @@ import '../../data/models/reader_prefs.dart';
 import '../../providers/collections_provider.dart';
 import '../../providers/novels_provider.dart';
 import '../../providers/prefs_provider.dart';
+import '../../services/sample/sample_content.dart';
 import '../widgets/book_cover.dart';
+import '../widgets/mini_toast.dart';
 import '../widgets/novel_card.dart';
 import '../widgets/view_mode_button.dart';
 
@@ -819,8 +822,27 @@ class _PopupChipItem {
   });
 }
 
-class _EmptyLibrary extends StatelessWidget {
+class _EmptyLibrary extends ConsumerStatefulWidget {
   const _EmptyLibrary();
+  @override
+  ConsumerState<_EmptyLibrary> createState() => _EmptyLibraryState();
+}
+
+class _EmptyLibraryState extends ConsumerState<_EmptyLibrary> {
+  bool _loading = false;
+
+  Future<void> _loadSample() async {
+    setState(() => _loading = true);
+    try {
+      await SampleContentService(ref.read(novelsProvider.notifier)).loadAll();
+      if (mounted) MiniToast.show(context, 'Sample content added ✓');
+    } catch (_) {
+      if (mounted) MiniToast.show(context, 'Could not load sample content');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -837,10 +859,26 @@ class _EmptyLibrary extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
-              'Tap "Add" to browse sources or import an EPUB / TXT file.',
+              kIsWeb
+                  ? 'Tap "Add" to import an EPUB / TXT file, or try the sample content below.'
+                  : 'Tap "Add" to browse sources or import an EPUB / TXT file.',
               textAlign: TextAlign.center,
               style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
             ),
+            if (kIsWeb) ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: _loading ? null : _loadSample,
+                icon: _loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_stories_outlined, size: 18),
+                label: const Text('Load sample story + article'),
+              ),
+            ],
           ],
         ),
       ),

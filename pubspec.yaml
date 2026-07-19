@@ -61,3 +61,4 @@ flutter:
   assets:
     - assets/jlpt/
     - assets/ipadic/
+    - assets/sample/
