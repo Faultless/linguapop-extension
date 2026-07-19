@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LinguaPop — read real Japanese, at your level</title>
+  <meta name="description" content="LinguaPop turns real Japanese news and novels into graded study material — tokenized, JLPT color-coded, and dictionary-backed. Fully offline." />
+  <meta property="og:title" content="LinguaPop — read real Japanese, at your level" />
+  <meta property="og:description" content="A Japanese reading app with JLPT color-coded tokens, tap-to-define dictionary, paired translations, and eleven reader themes. Fully offline." />
+  <meta property="og:image" content="https://faultless.github.io/linguapop-extension/shots/hero.png" />
+  <link rel="icon" href="favicon.png" />
+  <style>
+    :root {
+      --bg: #0c1f17;
+      --bg-raised: #12291f;
+      --border: rgba(134, 239, 172, 0.14);
+      --text: #e7f5ec;
+      --dim: #9db8a9;
+      --accent: #34d399;
+      --accent-deep: #059669;
+      --radius: 16px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+    header.nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0;
+    }
+    .brand { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.01em; }
+    .brand span { color: var(--accent); }
+    .nav a.gh { color: var(--dim); text-decoration: none; font-size: 0.9rem; }
+    .nav a.gh:hover { color: var(--text); }
+
+    .hero { padding: 72px 0 40px; text-align: center; }
+    .kicker {
+      display: inline-block; font-size: 0.78rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--accent);
+      border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px;
+    }
+    h1 {
+      margin-top: 22px; font-size: clamp(2.2rem, 6vw, 3.6rem);
+      letter-spacing: -0.02em; line-height: 1.12;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+    .lede {
+      margin: 20px auto 0; max-width: 620px; color: var(--dim); font-size: 1.12rem;
+    }
+    .cta-row { margin-top: 32px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 13px 26px; border-radius: 12px;
+      text-decoration: none; font-weight: 600; font-size: 0.98rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: #04150d; box-shadow: 0 10px 30px -12px var(--accent);
+    }
+    .btn.ghost { border: 1px solid var(--border); color: var(--text); }
+    .hero-shot {
+      margin: 56px auto 0; max-width: 860px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; box-shadow: 0 40px 120px -50px rgba(52, 211, 153, 0.45);
+    }
+    .hero-shot img { width: 100%; display: block; }
+
+    section.features { padding: 88px 0 40px; }
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 48px 40px; margin-top: 8px;
+    }
+    .feature { text-align: center; }
+    .phone {
+      width: min(280px, 80%); margin: 0 auto;
+      border: 1px solid var(--border); border-radius: 28px; overflow: hidden;
+      background: var(--bg-raised);
+      box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8);
+    }
+    .phone img { width: 100%; display: block; }
+    .feature h3 { margin-top: 22px; font-size: 1.15rem; }
+    .feature p { margin: 10px auto 0; max-width: 340px; color: var(--dim); font-size: 0.94rem; }
+
+    section.pillars { padding: 72px 0; }
+    .pillar-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .pillar {
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-raised); padding: 26px;
+    }
+    .pillar h3 { font-size: 1.02rem; color: var(--accent); }
+    .pillar p { margin-top: 10px; color: var(--dim); font-size: 0.92rem; }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 36px 0 48px;
+      color: var(--dim); font-size: 0.9rem; text-align: center;
+    }
+    footer a { color: var(--text); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+    .section-title { text-align: center; font-size: clamp(1.5rem, 3.4vw, 2.1rem); letter-spacing: -0.01em; }
+    .section-sub { text-align: center; color: var(--dim); margin: 12px auto 48px; max-width: 560px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <div class="brand">Lingua<span>Pop</span></div>
+      <a class="gh" href="https://github.com/Faultless/linguapop-extension" rel="noopener">GitHub ↗</a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <span class="kicker">日本語 · Japanese reading, graded to you</span>
+        <h1>Read <em>real</em> Japanese.<br />At your level.</h1>
+        <p class="lede">
+          LinguaPop turns news articles and novels into a learner's edition of
+          themselves — every word tokenized, JLPT color-coded, and one tap away
+          from a full dictionary entry. Entirely offline, on your device.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="app/" data-web-app>Try the web app</a>
+          <a class="btn ghost" href="https://github.com/Faultless/linguapop-extension" rel="noopener">View the code ↗</a>
+        </div>
+        <div class="hero-shot">
+          <img src="shots/hero.png" alt="LinguaPop reading view with JLPT color-graded Japanese text" />
+        </div>
+      </section>
+
+      <section class="features">
+        <h2 class="section-title">A reader that knows what you know</h2>
+        <p class="section-sub">
+          Import an EPUB, a text file, or a live news feed — LinguaPop does the
+          rest with an on-device NLP pipeline.
+        </p>
+        <div class="feature-grid">
+          <div class="feature">
+            <div class="phone"><img src="shots/shot-3.png" alt="Reading view with JLPT color-coded tokens" loading="lazy" /></div>
+            <h3>JLPT color-graded text</h3>
+            <p>Every word is tokenized on-device and underlined in its JLPT level color — gauge a page's difficulty at a glance, and watch it fade as you level up.</p>
+          </div>
+          <div class="feature">
+            <div class="phone"><img src="shots/shot-4.png" alt="Dictionary bottom sheet with definitions" loading="lazy" /></div>
+            <h3>Tap any word to learn it</h3>
+            <p>Instant offline JMdict lookups with readings, senses, frequency and JLPT tags — no copy-pasting into another app mid-sentence.</p>
+          </div>
+          <div class="feature">
+            <div class="phone"><img src="shots/shot-5.png" alt="Library view with news feeds and books" loading="lazy" /></div>
+            <h3>Your library, your progress</h3>
+            <p>Novels, articles, and paired originals + translations live side by side with reading progress, filters, and continue-reading shelves.</p>
+          </div>
+          <div class="feature">
+            <div class="phone"><img src="shots/shot-2.png" alt="Reader settings with eleven themes" loading="lazy" /></div>
+            <h3>Eleven reading themes</h3>
+            <p>Paper to Sepia to E-ink to Forest — with full typography control over size, line height, and column width for long sessions.</p>
+          </div>
+          <div class="feature">
+            <div class="phone"><img src="shots/shot-1.png" alt="Chapter navigation over a news feed" loading="lazy" /></div>
+            <h3>Built for real material</h3>
+            <p>Chapter navigation, paired 原 / EN / Both translation modes, and text-to-speech — reading real Japanese stops being an expedition.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="pillars">
+        <h2 class="section-title">Why it feels different</h2>
+        <p class="section-sub">Three decisions most reading apps don't make.</p>
+        <div class="pillar-grid">
+          <div class="pillar">
+            <h3>Offline-first, always</h3>
+            <p>The MeCab tokenizer and the full dictionary run on your device. No account, no server, no telemetry — your reading habit is yours.</p>
+          </div>
+          <div class="pillar">
+            <h3>Real material, not textbook dialogues</h3>
+            <p>NHK articles, Mainichi columns, novels from your own shelf — if it's Japanese text, LinguaPop can grade it.</p>
+          </div>
+          <div class="pillar">
+            <h3>Reading comfort is a feature</h3>
+            <p>Typography, themes, and paired translations are tuned for hour-long sessions, because language acquisition is a volume game.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Built end-to-end by <a href="https://faultless.github.io/Frontendienst/" rel="noopener">frontendienst</a> —
+      Flutter · Dart · MeCab · JMdict.
+      <span id="app-note"></span>
+    </footer>
+  </div>
+  <script>
+    // Hide the web-app CTA gracefully if no build is deployed at app/.
+    fetch("app/", { method: "HEAD" }).then((r) => {
+      if (!r.ok) throw new Error();
+    }).catch(() => {
+      const btn = document.querySelector("[data-web-app]");
+      if (btn) {
+        btn.textContent = "Web app coming soon";
+        btn.style.opacity = "0.55";
+        btn.style.pointerEvents = "none";
+      }
+    });
+  </script>
+</body>
+</html>

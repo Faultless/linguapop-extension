@@ -1,11 +1,8 @@
-name: Deploy Landing Page to GitHub Pages
+name: Deploy product site + web app to GitHub Pages
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'packages/landing/**'
-      - '.github/workflows/deploy-landing.yml'
   workflow_dispatch:
 
 permissions:
@@ -23,22 +20,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: subosito/flutter-action@v2
         with:
-          version: 10
+          channel: stable
+          cache: true
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+      - name: Build Flutter web app
+        run: |
+          flutter pub get
+          flutter build web --release --base-href /linguapop-extension/app/
 
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm --filter @linguapop/landing build
+      - name: Assemble site (landing at /, app at /app/)
+        run: |
+          mkdir -p _site/app
+          cp -r packages/landing/public/. _site/
+          cp -r build/web/. _site/app/
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: packages/landing/dist
+          path: _site
 
   deploy:
     needs: build

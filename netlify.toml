@@ -1,0 +1,16 @@
+# Netlify deploy for the LinguaPop product site.
+#
+# Zero-config path (free tier): the landing page is plain static files —
+# set publish = packages/landing/public and deploy with no build step.
+# The full path below also builds the Flutter web app into /app/ using
+# Netlify's build image (installs Flutter on the fly, ~3-4 min).
+
+[build]
+  command = "bash tool/netlify-build.sh"
+  publish = "_site"
+
+[[headers]]
+  for = "/app/*"
+  [headers.values]
+    Cross-Origin-Embedder-Policy = "credentialless"
+    Cross-Origin-Opener-Policy = "same-origin"
