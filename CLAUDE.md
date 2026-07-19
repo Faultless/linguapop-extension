@@ -4,84 +4,269 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-LinguaPop is a language-learning novel reader. Users import EPUB/TXT files (or a paired original+translation), and read them with switchable view modes (original / translated / parallel), per-token JLPT color coding for Japanese, tap-for-dictionary, select-for-translation, custom themes, multiple layouts, TTS, and fullscreen. Available as a browser extension, web app, and mobile (Capacitor) app. There is no backend — all state is stored in localStorage / IndexedDB.
+LinguaPop is a Japanese language-learning novel reader. Users import EPUB/TXT files (or a paired original+translation), and read them with switchable view modes (original / translated / parallel), per-token JLPT color coding for Japanese, tap-for-dictionary, select-for-translation, custom themes, multiple layouts, TTS, and fullscreen.
 
-## Monorepo Structure
+**This is a Flutter port.** The repo was previously a React/TypeScript monorepo (extension + web + mobile + landing); that code now lives in `legacy_ts/` and is kept only as a reference during the port. It is **not** built or shipped.
 
-pnpm workspace with six packages under `packages/`:
+## Targets
 
-- **`@linguapop/core`** — shared business logic: types, hooks (`useNovels`, `useReaderPrefs`), reader-prefs context, importers (EPUB/TXT), content cleaner, machine translation, kuromoji wrapper, JLPT vocab, Jisho dictionary lookup, IDB key-value store.
-- **`@linguapop/ui`** — shared React components and views: `ReadTab` (entire app), `Library` (home), `Reader` (the reading view), `ImportNovelPanel`, `ReaderSettingsPanel`, `JapaneseText` (colored tokens), `JlptWordPopover`.
-- **`@linguapop/extension`** — Chrome/Firefox MV3 popup (420×580px fixed viewport).
-- **`@linguapop/web`** — responsive web app (`max-w-lg`).
-- **`@linguapop/mobile`** — Capacitor 7 wrapper (iOS/Android) around the same web app.
-- **`@linguapop/landing`** — static HTML/Tailwind marketing page (no React), deployed to GitHub Pages at `/linguapop-extension/`.
+Single Flutter codebase, three runtime targets:
 
-All three app targets (extension, web, mobile) render `<ReaderPrefsProvider><ReadTab/></ReaderPrefsProvider>` — there is no tab navigation, the reader is the entire app.
+- **Android** — primary target. Native back-button navigation, edge-to-edge system bars, MeCab tokenizer bundled natively.
+- **Linux desktop** — same code, runs as a native desktop app.
+- **Web** — Flutter web build. MeCab is unavailable here; the tokenizer falls back to a degraded mode (planned).
+
+No iOS scaffold (can be added later with `flutter create . --platforms ios`).
+
+## Project structure
+
+```
+lib/
+  main.dart                 — bootstrap: Hive init, edge-to-edge, ProviderScope
+  app.dart                  — root MaterialApp.router, reads activeThemeProvider
+  data/
+    models/                 — Chapter, NovelMeta, NovelBody, ReaderPrefs, ReaderTheme,
+                              VocabEntry, DictEntry/Sense/Result, JlptStats, JpToken
+    storage/storage.dart    — Hive box registration (prefs / novels_meta / novel_body /
+                              jpdict / vocab); see "Storage layout" below
+    themes/builtin_themes.dart — 11 BUILTIN_THEMES (paper/sepia/cream/rose/mint/
+                              night/midnight/forest/eink/highc/burnout), JLPT color map
+  providers/                — Riverpod state notifiers
+    prefs_provider.dart     — readerPrefsProvider, activeThemeProvider
+    novels_provider.dart    — novelsProvider (meta list), novelBodyProvider (family)
+    vocab_provider.dart     — vocabProvider
+  ui/
+    router.dart             — go_router config; routes nested under /
+    screens/                — library, reader, settings, import, vocab,
+                              sources, news (news hub)
+    widgets/                — NovelCard/NovelListRow/NovelWideCard, JapaneseText,
+                              JlptBadge, DifficultyBadge, NewsThumb (lazy image),
+                              ViewModeButton, MiniToast
+
+legacy_ts/                  — old React/TS monorepo, reference only
+assets/jlpt/                — JLPT vocab JSON (to be generated from legacy data)
+```
 
 ## Common Commands
 
 ```bash
-# Development
-pnpm dev:extension       # extension popup dev server
-pnpm dev:web             # web app dev server
-pnpm dev:landing         # landing page dev server
-
-# Building
-pnpm build:extension     # produces packages/extension/dist/
-pnpm build:web
-pnpm build:mobile        # web build + cap sync
-pnpm build:android
-pnpm build:landing
-pnpm build               # builds all packages
-
-# Linting
-pnpm lint                # ESLint across entire monorepo
+flutter pub get                # install Dart deps
+flutter run                    # run on connected Android device / desktop / web
+flutter run -d chrome          # web
+flutter run -d linux           # Linux desktop
+flutter analyze                # static analysis (lints + type check)
+flutter test                   # run tests
+flutter build apk --debug      # Android debug APK
+flutter build apk --release    # Android release APK
+flutter build web              # web build to build/web/
+flutter build linux            # Linux desktop build
 ```
 
-Mobile Capacitor commands (run inside `packages/mobile`):
-```bash
-pnpm cap:sync            # sync web build to native
-pnpm cap:open:ios        # open Xcode
-pnpm cap:open:android    # open Android Studio
-```
+## Architecture
 
-There are no test commands — there is currently no test suite.
+### State management
 
-## Key Architecture Decisions
+Riverpod (`flutter_riverpod`). One `StateNotifier` per persistent domain:
 
-### State Management
+- `ReaderPrefsNotifier` — every reader pref, serializes to `Storage.prefs()['reader_prefs']` as JSON.
+- `NovelsNotifier` — library `NovelMeta[]` list, plus body load/save methods. Bodies are stored per-id in `Storage.novelBody()` so the meta list stays small.
+- `VocabNotifier` — flat `VocabEntry[]`, dedup keyed on `(base, isPhrase)`.
 
-No global state library. Single source of truth for reader prefs lives in `ReaderPrefsProvider` (Context). Novels are held by `useNovels`: lightweight `NovelMeta[]` index in localStorage, full `NovelBody` (chapters) per novel in IndexedDB.
+`activeThemeProvider` derives the current `ReaderTheme` from `readerPrefsProvider`. `MaterialApp.router` consumes it so theme changes propagate instantly.
+
+### Storage layout (Hive)
+
+| Box           | Key                  | Value                              |
+|---------------|----------------------|------------------------------------|
+| `prefs`       | `reader_prefs`       | JSON-encoded `ReaderPrefs`         |
+| `novels_meta` | `list`               | JSON list of `NovelMeta`           |
+| `novel_body`  | `{novelId}`          | JSON `NovelBody`                   |
+| `jpdict`      | `{query}`            | JSON `DictResult` (infinite cache) |
+| `vocab`       | `list`               | JSON list of `VocabEntry`          |
+| `covers`      | `{novelId}`          | base64-encoded local cover image bytes |
+
+The `prefs` box also holds key `collections` (JSON list of `Collection`) for user-defined library shelves.
+
+Logical equivalents of the legacy JS localStorage/IndexedDB layout — same JSON shape so future migration tooling is straightforward.
+
+### Navigation
+
+`go_router` with all routes nested under `/`. Android system back button works out of the box — `MaterialApp.router` wires up the Navigator pop chain. Routes:
+
+- `/` — Library
+- `/book/:novelId` — Book detail (cover/rating-less metadata edit, collections, tags, cover picker)
+- `/reader/:novelId` — Reader (`?ch=N` query param deep-links to a chapter, used by the news hub)
+- `/news` — News hub (all imported feed articles: day grouping, read state, difficulty, sync)
+- `/reader/:novelId/settings` — Reader settings (also `/settings`)
+- `/import` — File-picker import flow (stub)
+- `/vocab` — Saved vocab list
+- `/sources` — Online source adapters (stub)
 
 ### Theming
 
-`ReaderPrefs.themeId` selects from `BUILTIN_THEMES` (plus user-defined `customThemes`). The active theme is applied app-wide via inline styles reading `theme.bg / fg / accent / muted`. There is no CSS variable scaffolding — components consume the theme through the context.
+`ReaderTheme.toThemeData()` produces a Material 3 `ThemeData` seeded from the theme's accent color and overriding `surface`/`onSurface` with the theme's bg/fg. App-wide theme is whatever the user picked in `prefs.themeId`. AppBar / BottomSheet / Card / ListTile inherit through standard Material theming — no per-widget inline colors needed.
 
-### Translation
+### List view modes
 
-`translateText(text, src, tgt, opts?)` is the unified MT call: tries Capacitor native (iOS Translation / ML Kit on Android) if a plugin is registered, then Google Translate's public `gtx` endpoint, then LibreTranslate. Long chapters are split on paragraph/sentence boundaries. Translation is **explicit only** — never auto-fires; user presses the in-reader Translate button or selects text.
+Library and news screens share a `LibraryViewMode { grid, list, card }` (persisted in `ReaderPrefs.libraryViewMode` / `newsViewMode`), toggled via `ViewModeButton` in each app bar:
+- **grid** ("Media") — cover/image-forward tiles. Library shows `NovelCard` (cover + clamped 2-line title + author; tags intentionally omitted here to avoid grid-cell overflow). News shows 16:9 image cards.
+- **list** — compact rows. `NovelListRow` (46px cover thumb + title/author/clamped tag row) and the news `_ArticleRow` (title + source·time + difficulty bar + small lead thumb).
+- **card** ("Cards") — full-width rich cards. `NovelWideCard` (64px cover + title + author + tag wrap + progress) and a taller news row with a 2-line snippet and an 84px image.
 
-### Japanese
+All entry widgets clamp text with `maxLines`+ellipsis and wrap variable rows (title beside badges, source/time beside difficulty) in `Expanded`/`Flexible`, so long titles or tag lists can't overflow. Tag rows clamp to a fixed count with a `+N` indicator.
 
-`kuromoji.js` is loaded as a UMD `<script>` from jsDelivr the first time a Japanese chapter is opened (its IPADIC dict, ~10 MB, is fetched from the same CDN and browser-cached). Tokens are colored by JLPT level using a curated starter vocab list bundled in core. Tap a token → Jisho dictionary lookup (cached in IDB). Drag-select a span → `translateText` of the selection.
+News lead images (`Chapter.imageUrl`) are lazy: `NewsThumb` uses `Image.network` (streamed + ImageCache-backed) with a `cacheWidth` cap and fade-in, falling back silently to a glyph on error/no-image, so images never block list scrolling. `imageUrl` is captured at import time — from each adapter's article `og:image` (`ogImage()` in `rss.dart`), falling back to the feed stub's image; threaded through `SourceImporter.importArticle`.
+
+### Transient feedback
+
+`MiniToast.show(context, msg)` (`lib/ui/widgets/mini_toast.dart`) is a tiny bottom-left overlay toast that fades in/out almost instantly (~90ms in, ~650ms hold, ~180ms out) and replaces itself in place. Used for low-importance confirmations in the sources browser ("Adding…", "Added ✓", "Removed") instead of full-width SnackBars. Failures still use a SnackBar so they're dismissible and visible.
+
+### Library organization
+
+Kindle-style classification on top of `NovelMeta`:
+- **Cover art**: `lib/services/covers/cover_service.dart` queries the Google Books Volumes API (no key, `package:http` so it works on web too — unlike the `dart:io` `SessionClient`). `NovelsNotifier.autoFetchCover(id)` runs best-effort on import for books with no embedded cover. The book detail screen's cover picker also offers online search, paste-URL, and pick-from-device. Device-picked images are stored as base64 in the `covers` box and referenced by a `local:{novelId}` `coverUrl`; `BookCover` renders the three cases (`local:` → `Image.memory`, remote/`data:` → `Image.network`, none → procedural) and watches `coverRevisionProvider` so a freshly-picked cover repaints.
+- **Collections**: user-named shelves. `Collection` model + `collectionsProvider` (persisted in the `prefs` box under `collections`). Books reference them by id via `NovelMeta.collectionIds`, so renaming never rewrites the meta list. Library has a Collection filter chip.
+- **Favorites**: `NovelMeta.favorite` (heart toggle in detail + a Favorites filter chip; heart overlay on the grid card).
+- **Continue reading**: `NovelMeta.lastReadAt` (bumped by the reader's progress save) drives a horizontal "Continue reading" row at the top of the library, showing in-progress books most-recently-read first. Hidden when any filter is active.
+- **Book detail screen**: `lib/ui/screens/book_detail_screen.dart` (`/book/:novelId`, opened by long-pressing a library card) hosts cover editing, favorite, collections, tags, content type, and remove.
+
+### Japanese pipeline
+
+- **Tokenizer**: `lib/services/tokenizer/` — abstract `JpTokenizer` with a conditional-import factory:
+  - `mecab_tokenizer_native.dart` — wraps the vendored `plugins/mecab_dart` FFI plugin, bundles IPADIC from `assets/ipadic/` (~51 MB, copied to documents dir on first run), maps MeCab features to our `JpToken` model (base form, hiragana reading, POS, 活用型/活用形, filler flag).
+  - `conjugation_merger.dart` — post-pass over the raw morphemes: merges verb/adjective stems with their auxiliary chain (て-connectors, 助動詞, 非自立 helper verbs, 接尾 voice suffixes) into one token per conjugated phrase, with a `ConjugationInfo` (form labels like progressive/polite/past/passive/causative + per-morpheme breakdown). Merged surfaces always concatenate back to the original text. Unit-tested against known IPADIC analyses in `test/conjugation_merger_test.dart`.
+  - `mecab_tokenizer_stub.dart` — web fallback (returns the whole text as one filler token).
+- **JLPT lookup**: `lib/services/dictionary/jlpt_lookup.dart`. Loads two bundled JSON assets at app start:
+  - `assets/jlpt/vocab.json` — 8,034 entries from the open Tanos / Jonathan Waller list.
+  - `assets/jlpt/starter.json` — 307 curated common keys (particles, kana words) keyed by comma-separated surfaces.
+  Both are merged into a single `String → JlptHit` map. Duplicate keys keep the easier level. The `register()` method lets cached Jisho lookups merge in later.
+- **JapaneseText widget**: `lib/ui/widgets/japanese_text.dart`. While the tokenizer is loading the text renders plain; once `tokenizerStatusProvider` flips to `ready` it retokenizes and renders each content token as a colored `TextSpan` with a dotted underline. Respects `prefs.coloriseJapanese` and the `prefs.jlptColorRules` POS×level matrix. `onTapToken` is wired but unused until the Jisho popover lands.
+- **JLPT colors**: N5=teal, N4=green, N3=amber, N2=orange, N1=red (see `kJlptColors`).
+- **Warm-up**: `LinguapopApp` reads `tokenizerStatusProvider.future` + `jlptLoadedProvider.future` in a post-frame callback so the first chapter open isn't blocked on a 51 MB asset copy.
+
+**Native build notes** (Android, see `plugins/mecab_dart/`):
+- The vendored plugin keeps the upstream FFI Dart side (`lib/mecab_dart.dart`) unchanged so future upstream merges stay easy. Only the Android Kotlin plugin (V1 → V2 embedding) and `build.gradle` (AGP 7.3 → 8.7, Kotlin 1.7 → 2.0, minSdk 21, namespace) were updated.
+- MeCab's C++ uses `register` storage class, removed in C++17. `plugins/mecab_dart/android/CMakeLists.txt` pins to C++14 and adds `-Wno-register` so it builds against the modern NDK.
+
+### Dictionary popover
+
+- **Service**: `lib/services/dictionary/jisho_service.dart`. Calls Jisho's public JMdict-derived API, caches every successful query in the `jpdict` Hive box forever (offline fallback to cache on subsequent network failures), and feeds JLPT-tagged hits back into the in-memory `JlptLookup` via `register()` so previously-tapped words light up on the next read.
+- **UI**: `lib/ui/widgets/word_popover.dart` — `showWordPopover()` opens a draggable bottom sheet with the headword, reading, base form, conjugation analysis for merged verb phrases (form-label chips + morpheme breakdown, e.g. 食べ + て + い + まし + た), every Jisho sense (parts of speech + glosses), JLPT badge, "common" badge, and a "Save to vocab" action that writes a `VocabEntry` attributed to the current novel + chapter.
+- The reader's `JapaneseText` wires every colored token's `onTapToken` callback to this popover.
 
 ### Importers
 
-`parseEpub` handles EPUB 2/3 via JSZip; `splitTxtIntoChapters` heuristically splits .txt files. `pruneNovel()` strips frontmatter/backmatter (copyright pages, TOC, dedications, "About the author"). `alignChapters()` pairs original + translation chapter-by-chapter (by index, falling back to title-similarity Jaccard).
+`lib/services/import/` contains the ported flow:
+- `epub_importer.dart` — `parseEpub(Uint8List)`. ZIP via `archive`, OPF/XHTML via `xml`. Pulls metadata (title, author, language, cover data URL), walks the spine, extracts visible text with block-level newline insertion. Falls back to a regex tag strip if XHTML is malformed.
+- `txt_importer.dart` — `splitTxtIntoChapters(text)`. Same heuristic as the legacy (chapter regex → markdown headings → `---`/`***` → 3+ blank lines), single-chapter fallback.
+- `novel_cleaner.dart` — `pruneNovel()` and `alignChapters()`.
+- `jp_detect.dart` — `looksJapanese()`.
+- `import_service.dart` — `ImportService.importFile()` orchestrates the whole flow (parse → prune → optional align → JP detection → write to library).
+- UI: `lib/ui/screens/import_screen.dart` — file picker for original + optional paired translation; status snackbar; routes back to library on success.
 
-### CORS
+### Translation
 
-`corsFetch` (in `packages/core/src/utils/corsFetch.ts`) routes through:
-- **Extension:** direct `fetch` (MV3 `host_permissions: ["*://*/*"]`).
-- **Mobile:** direct `fetch` (Capacitor WebView).
-- **Dev server:** Vite middleware at `/cors-proxy` (configured in each package's `vite.config.ts`).
-- **Production web:** `VITE_CORS_PROXY_URL` env var or direct fetch fallback.
+`lib/services/translation/translate_service.dart`:
+- Paragraph → sentence → hard 4500-char chunking via `splitForTranslation()`.
+- Provider chain: Google Translate `gtx` first (no key, returns JSON segments), LibreTranslate mirrors as fallback (argosopentech.com, libretranslate.de).
+- Per-chunk progress callback for the reader's "Translate chapter" UI; `CancelToken` aborts mid-translation.
+- Smoke-tested live: short and multi-paragraph Japanese translate cleanly.
 
-## Tech Stack
+Wired into the reader's bottom-bar Translate button: opens a non-dismissable progress sheet, persists the result onto the chapter, switches the view mode to parallel.
 
-All packages share: React 19, TypeScript 6 (strict), Vite 8, Tailwind CSS 4 (via `@tailwindcss/vite`), ESLint 9 (flat config). TypeScript has `noUnusedLocals` and `noUnusedParameters` — keep imports and parameters clean.
+### Sources
 
-## Deployment
+`lib/services/sources/`:
+- `source_types.dart` — abstract `FeedSource` / `SearchSource` interfaces, `BookStub`, `ArticleStub`, `ChapterStub`, `SearchQuery`, enums.
+- `session_client.dart` — cookie-aware HTTP client built on `dart:io HttpClient`. Follows redirects manually so cookies set mid-chain survive (NHK Easy's `/tix/build_authorize` flow needs this). RFC-6265-ish domain matching so a cookie on `web.nhk` reaches `news.web.nhk`.
+- `nhk_auth.dart` — the one-shot NHK handshake (`/tix/build_authorize`, `profileType=abroad`, Tokyo postal defaults), memoized per `SessionClient` and shared by both NHK adapters.
+- `nhk_easy.dart` — feed adapter. Hits `top-list.json` with the JWT cookie from the handshake. Parses article HTML via the `html` package, strips `<rt>/<rp>` ruby.
+- `nhk_news.dart` — regular NHK News Web feed adapter. Lists via the public RSS (`www3.nhk.or.jp/rss/news/cat0.xml`); article bodies live on `news.web.nhk/newsweb/na/na-{id}` and are only fully server-rendered with the handshake cookies. The newsweb pages use hashed CSS classes, so the body extractor self-calibrates: the first `<p>` after the `<h1>` is the lead, and every body paragraph shares its exact class attribute.
+- `mainichi.dart` — Mainichi Shimbun breaking-news feed (RDF RSS + `section.articledetail-body` scrape). Premium articles are detected via the `cXenseParse:mai-fee-charging` meta and imported with their free portion plus a notice.
+- `rss.dart` — minimal RSS 2.0 + RDF/RSS 1.0 item parser (incl. RFC-822 dates) shared by the feed adapters.
+- `syosetu.dart` — search adapter. Calls `api.syosetu.com/novelapi/api/` with `order=hyoka` etc. Scrapes the `.p-eplist__sublist` TOC and `.p-novel__text` chapter body; 600 ms throttle between chapters.
+- `source_registry.dart`, `source_import.dart`, `providers/sources_provider.dart`.
+- `source_import.dart`'s `SourceImporter` handles both shapes:
+  - Articles → append into a rolling `feed:<sourceId>` novel; dedup by `sourceUrl`.
+  - Books → new novel with all chapters; reports progress through an `ImportTask` (with cancel).
 
-The landing page deploys automatically to GitHub Pages via `.github/workflows/deploy-landing.yml` on every push to `main`.
+UI: `lib/ui/screens/sources_screen.dart` — single search bar, source-filter chips generated from the registry, order + completion popup, articles + books mixed in one scroll. One-tap **+** button on every result imports (instant for articles, progress sheet for books); already-imported items show a checkmark that removes them on tap (with confirm). Article tiles show an approximate JLPT difficulty badge estimated from title + summary. Tap-through on books opens a detail bottom sheet with summary, tags, and a big "Add to library" button.
+
+### News hub
+
+`lib/ui/screens/news_screen.dart` (`/news`): every imported feed article across all news sources in one list — newest first, grouped by day, unread dots (`news_read_ids` in the prefs box via `newsReadProvider`), per-article JLPT difficulty badge + distribution bar (estimated from the full stored text), swipe-to-delete, source + unread filters, and a sync action that fetches the newest unimported articles from every feed source (capped at 10/source/pass). Tapping an article marks it read and deep-links into the reader at that chapter (`/reader/:id?ch=N`). `newsArticlesProvider` (in `lib/providers/news_provider.dart`) flattens the rolling feed novels and recomputes whenever the library changes.
+
+### Difficulty estimation
+
+`lib/services/dictionary/jlpt_estimator.dart` — tokenizes a text (first 4k chars) and buckets content words (noun/verb/adjective/adverb) against the JLPT table into `JlptStats`; `difficultyBucket` gives the closest level. Memoized per text. `DifficultyBadge` (`lib/ui/widgets/difficulty_badge.dart`) renders the estimate ("~N3" when approximate) and optionally a stacked N5…N1 share bar; renders nothing when the tokenizer is unavailable (web stub).
+
+Smoke tests under `tool/` for offline verification:
+- `dart run tool/smoke_sources.dart` — hits Syosetu search + chapter, NHK Easy list + article.
+- `dart run tool/smoke_news_sources.dart` — lists + fetches the first article from all three news feeds (NHK Easy, NHK News, Mainichi).
+- `dart run tool/smoke_translate.dart` — checks ja → en against gtx + the chunk splitter.
+
+### Vocab export (AnkiDroid)
+
+`lib/services/export/vocab_export.dart`:
+- `toTsv(entries, opts)` — pure function. UTF‑8 TSV, columns: Front (kanji surface), Reading (kana), Back (semicolon-joined glosses), PartsOfSpeech, Example, Source (novel title + URL), Tags (space-separated, AnkiDroid convention). Tabs/newlines inside fields collapsed to spaces so every entry is exactly one row.
+- `VocabExporter.exportAll(opts)` — writes a BOM-prefixed TSV to a temp file and hands it to `Share.shareXFiles`. AnkiDroid (and any other text-handling app) appears in the share sheet. After a successful share, every exported entry's `exportedAt` is bumped so subsequent "Export new since last" works.
+- `ExportOptions { since, header }` — `since` filters to entries added after a timestamp; `header` prepends the column-name row.
+
+UI: `lib/ui/screens/vocab_screen.dart` — sort menu (recent / alpha / JLPT level), text filter, swipe-to-delete with confirm, JLPT badge + cloud icon for previously-exported entries, share button in the AppBar that opens an export sheet with three options ("Everything", "New since last export", "Everything, with header row").
+
+## Android build notes
+
+The Android build needs a few compat shims (see `android/build.gradle.kts` and
+`android/gradle.properties`):
+- AGP 8 requires every Android library to declare a `namespace`; older plugins
+  used the legacy `<manifest package="…">` attribute. We backfill it.
+- Plugins may compile their Java side at a different JVM target than the
+  Kotlin side; we align Kotlin to whatever the plugin's Java is set to.
+- `minSdk = 21` (raised from Flutter's default 16) for native plugins that
+  bundle NDK platform-21 code.
+
+## Migration status
+
+| Subsystem                          | Status     |
+|------------------------------------|------------|
+| Data models                        | ✅ done    |
+| Hive storage                       | ✅ done    |
+| 11 builtin themes + theme picker   | ✅ done    |
+| Riverpod providers                 | ✅ done    |
+| Navigation (go_router)             | ✅ done    |
+| Library screen                     | ✅ done    |
+| Reader screen (skeleton)           | ✅ done    |
+| Reader settings panel              | ✅ done    |
+| Japanese tokenizer (MeCab)         | ✅ done    |
+| JLPT vocab bundling + lookup       | ✅ done    |
+| JapaneseText w/ JLPT colors        | ✅ done    |
+| Jisho dictionary popover           | ✅ done    |
+| Translation service                | ✅ done    |
+| TTS                                | ⊘ skipped (per request)  |
+| EPUB / TXT importers               | ✅ done    |
+| Sources adapters (NHK, Syosetu)    | ✅ done    |
+| Vocab Anki export                  | ✅ done    |
+
+## Working with legacy_ts/
+
+When porting a behavior, the legacy file is usually the canonical spec. Common lookups:
+
+- Reader prefs defaults / theme list: `legacy_ts/packages/core/src/context/ReaderPrefsContext.tsx`, `legacy_ts/packages/core/src/data/readerThemes.ts`
+- Data types: `legacy_ts/packages/core/src/data/types.ts`
+- JLPT vocab table (~8k entries): `legacy_ts/packages/core/src/data/jlptVocab.full.ts`
+- JP tokenizer: `legacy_ts/packages/core/src/utils/jpTokenizer.ts`
+- Dictionary lookup: `legacy_ts/packages/core/src/utils/jpDictLookup.ts`
+- JLPT stats: `legacy_ts/packages/core/src/utils/jlptStats.ts`
+- Translation: search `legacy_ts/packages/core/src/utils/` for `translate`
+- EPUB / TXT / cleaner: `legacy_ts/packages/core/src/sources/`
+- Reader / Library / Settings React UI: `legacy_ts/packages/ui/src/`
+
+`legacy_ts/` is gitignored at the `node_modules/` level — the source files are version controlled, the build artifacts are not.
+
+## Conventions
+
+- Use `flutter_riverpod` providers; do not call `Hive.box(...)` directly from widgets — go through providers.
+- Models stay JSON-serializable via `toJson` / `fromJson` (no `hive_generator`). This makes export/import and migration trivial.
+- New screens go in `lib/ui/screens/`; new shared widgets in `lib/ui/widgets/`.
+- Strings are UI-only and inlined; we'll add i18n later if needed.
+- Stick to Material 3 with the active theme's `ColorScheme`; avoid inline colors except where the design calls for the theme's literal bg/fg/accent.

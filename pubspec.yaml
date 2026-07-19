@@ -1,0 +1,63 @@
+name: linguapop
+description: "A Japanese language-learning novel reader."
+publish_to: 'none'
+version: 1.0.0+2
+
+environment:
+  sdk: ^3.11.3
+  flutter: ">=3.41.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Navigation
+  go_router: ^14.6.2
+
+  # Storage
+  hive_ce: ^2.10.0
+  hive_ce_flutter: ^2.2.0
+  path_provider: ^2.1.5
+  shared_preferences: ^2.3.4
+
+  # Networking
+  http: ^1.2.2
+
+  # HTML parsing for source-site scraping (Syosetu, NHK Easy chapter bodies)
+  html: ^0.15.4
+
+  # File handling / EPUB
+  file_picker: ^8.1.7
+  archive: ^3.6.1
+  xml: ^6.5.0
+
+  # Japanese tokenization: vendored mecab_dart at plugins/mecab_dart, patched
+  # to drop the removed V1 plugin API. Bundles MeCab compiled from source and
+  # IPADIC dictionary assets in assets/ipadic/. FFI-only — won't compile for
+  # web; the JpTokenizer factory falls back to a stub on web.
+  mecab_dart:
+    path: plugins/mecab_dart
+
+  # Sharing / export
+  share_plus: ^10.1.4
+  path: ^1.9.0
+
+  # Utilities
+  collection: ^1.18.0
+  uuid: ^4.5.1
+  crypto: ^3.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/jlpt/
+    - assets/ipadic/

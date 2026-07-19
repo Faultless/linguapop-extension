@@ -1,0 +1,29 @@
+name: mecab_dart
+description: Vendored MeCab FFI plugin patched for Flutter V2 embedding.
+version: 0.1.6+linguapop.1
+homepage: https://github.com/dttvn0010/mecab_dart
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.1.0
+  path_provider: ^2.1.0
+  path: ^1.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.example.mecab_dart
+        pluginClass: MecabDartPlugin
+      linux:
+        pluginClass: MecabDartPlugin

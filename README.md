@@ -1,78 +1,65 @@
 # LinguaPop
 
-Smart language learning resource recommendations — radio, podcasts, YouTube and more, matched to your level and interests.
+A Japanese language-learning novel reader. Import EPUB / TXT files (or a paired original + translation), and read with switchable view modes, per-token JLPT color coding, tap-for-dictionary, select-for-translation, custom themes, TTS, and more.
 
-Available as a **browser extension** (Chrome/Firefox), **web app**, and **mobile app** (Android via Capacitor).
+> **Status**: this repo is being migrated from a React/TypeScript monorepo to a single **Flutter** codebase. The old TS sources are kept under `legacy_ts/` as reference. See `CLAUDE.md` for the migration status table.
 
-## Features
+## Targets
 
-- **Live radio** — Stream stations in your target language
-- **Podcasts** — Browse episodes with a built-in audio player and adjustable playback speed
-- **YouTube** — Curated channels for language learners
-- **Custom feeds** — Paste any YouTube channel, podcast RSS, or website URL and it gets parsed alongside curated content
-- **Smart matching** — Set your level (beginner/intermediate/advanced) and interests; resources are ranked by relevance
-- **10 languages** — French, Spanish, German, Italian, Portuguese, Japanese, Korean, Chinese, Arabic, Russian
-- **No account required** — Preferences stored locally on-device
+| Platform     | Status      | Notes                                  |
+|--------------|-------------|----------------------------------------|
+| Android      | ✅ scaffold | Native back button, edge-to-edge       |
+| Linux desktop| ✅ scaffold |                                        |
+| Web          | ✅ scaffold | No MeCab — tokenizer is degraded on web|
+| iOS          | ⏳ not yet  | `flutter create . --platforms ios`     |
 
-## Monorepo Structure
+## Getting started
 
-```
-packages/
-  core/        Shared logic: types, data, hooks, utils, audio context
-  ui/          Shared React components and views
-  extension/   Browser extension target (Chrome/Firefox, MV3)
-  web/         Responsive web app target
-  mobile/      Capacitor mobile app target (iOS/Android)
-  landing/     Static landing page (deployed to GitHub Pages)
-```
-
-## Getting Started
-
-```sh
-pnpm install
-```
-
-### Development
-
-```sh
-pnpm dev:extension    # Browser extension (localhost:5173)
-pnpm dev:web          # Web app
-pnpm dev:landing      # Landing page
+```bash
+flutter pub get
+flutter run                 # auto-pick device
+flutter run -d chrome       # web
+flutter run -d linux        # Linux desktop
 ```
 
 ### Building
 
-```sh
-pnpm build:extension  # → packages/extension/dist/
-pnpm build:web        # → packages/web/dist/
-pnpm build:landing    # → packages/landing/dist/
-pnpm build            # Build all packages
+```bash
+flutter build apk --debug         # Android APK
+flutter build apk --release
+flutter build web
+flutter build linux
 ```
 
-### Loading the Extension
+### Checks
 
-1. Run `pnpm build:extension`
-2. **Chrome**: `chrome://extensions` → Developer Mode → Load unpacked → select `packages/extension/dist/`
-3. **Firefox**: `about:debugging` → This Firefox → Load Temporary Add-on → select `packages/extension/dist/manifest.json`
-
-### Mobile (Capacitor)
-
-```sh
-cd packages/mobile
-npx cap add ios        # First time only
-npx cap add android    # First time only
-pnpm build && npx cap sync
-npx cap open ios       # Open in Xcode
-npx cap open android   # Open in Android Studio
+```bash
+flutter analyze       # static analysis + lints
+flutter test          # tests
 ```
 
-## Tech Stack
+## Project layout
 
-- React 19, TypeScript 6, Vite 8
-- Tailwind CSS 4
-- Capacitor 7 (mobile)
-- pnpm workspaces
+```
+lib/
+  main.dart        bootstrap
+  app.dart         MaterialApp.router
+  data/            models · storage · themes
+  providers/       Riverpod state notifiers
+  ui/              router · screens · widgets
+assets/jlpt/       JLPT vocab JSON (port of legacy_ts data)
+legacy_ts/         previous React/TS monorepo (reference only)
+```
 
-## Landing Page
+For architectural decisions, conventions, and a port checklist, see `CLAUDE.md`.
 
-Hosted on GitHub Pages and auto-deployed via GitHub Actions on push to `main`.
+## Tech stack
+
+- Flutter 3.41 (Dart 3.11)
+- Riverpod (state) · go_router (navigation) · Hive (storage)
+- mecab_dart (Japanese tokenization, native) · flutter_tts · http
+- archive · xml · file_picker (EPUB / TXT import)
+
+## License
+
+TBD.
