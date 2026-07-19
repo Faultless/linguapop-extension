@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../../services/sources/source_types.dart';
 import '../../services/sources/syosetu.dart';
 import '../widgets/difficulty_badge.dart';
 import '../widgets/mini_toast.dart';
+import '../widgets/web_source_notice.dart';
 
 const _kSourceAll = 'all';
 
@@ -57,6 +59,14 @@ class _SourcesScreenState extends ConsumerState<SourcesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Live source adapters are dart:io-based (and CORS-blocked besides) —
+    // never touch the registry on web, its client can't even construct.
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Browse sources')),
+        body: const SafeArea(child: WebSourceNotice()),
+      );
+    }
     final registry = ref.watch(sourceRegistryProvider);
     final feedSources = registry.feedSources.where(_visible).toList();
     final searchSources = registry.searchSources.where(_visible).toList();

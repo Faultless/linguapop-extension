@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,7 @@ import '../../providers/sources_provider.dart';
 import '../widgets/difficulty_badge.dart';
 import '../widgets/news_thumb.dart';
 import '../widgets/view_mode_button.dart';
+import '../widgets/web_source_notice.dart';
 
 const _kAllSources = 'all';
 // Per-source cap for one sync pass — keeps a first sync from importing a
@@ -93,6 +95,14 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Same restriction as the sources screen: the feed adapters are
+    // dart:io-based and cannot run on Flutter web.
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('News')),
+        body: const SafeArea(child: WebSourceNotice()),
+      );
+    }
     final articlesAsync = ref.watch(newsArticlesProvider);
     final readSet = ref.watch(newsReadProvider);
     final registry = ref.watch(sourceRegistryProvider);
